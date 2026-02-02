@@ -1,6 +1,23 @@
 <?php
 header("Content-Type: application/json");
 
+
+//Convert PHP errors (warnings/notices) into Exceptions
+set_error_handler(function ($errno, $errstr, $file, $line) {
+    throw new ErrorException($errstr, 0, $errno, $file, $line);
+});
+
+
+// Global exception handler
+set_exception_handler(function (Throwable $e) {
+    http_response_code($e->getCode() ?: 500);
+    echo json_encode([
+        "status"  => "error",
+        "message" => $e->getMessage()
+    ]);
+    exit;
+});
+
 const AUTH_USER = 'user';
 const AUTH_PASS = 'user123';
 
@@ -9,6 +26,14 @@ function calculate(): array
     // Authentication check
     $username = $_SERVER['HTTP_USERNAME'] ?? null;
     $password = $_SERVER['HTTP_PASSWORD'] ?? null;
+
+    //To test setErrorHandler
+    // echo $test;
+    // strlen([]);
+    // include "missing_file.php";
+
+    //To test setExceptionHandler
+    // throw new Exception("Uncaught exception test");
 
     if ($username !== AUTH_USER || $password !== AUTH_PASS) {
         throw new RuntimeException("Unauthorized access", 401);
@@ -94,19 +119,12 @@ try {
     http_response_code(200);
     echo json_encode($response);
     return;
-} catch (InvalidArgumentException $e) {
+} catch (InvalidArgumentException | DomainException $e) {
     http_response_code($e->getCode() ?: 400);
-} catch (DomainException $e) {
-    http_response_code($e->getCode() ?: 400);
+    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    return;
 } catch (RuntimeException $e) {
     http_response_code($e->getCode() ?: 500);
-} catch (Throwable $e) {
-    // Fallback for unexpected errors
-    http_response_code(500);
+    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    return;
 }
-
-echo json_encode([
-    "status"  => "error",
-    "message" => $e->getMessage()
-]);
-return;
