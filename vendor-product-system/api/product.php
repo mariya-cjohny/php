@@ -1,33 +1,34 @@
 <?php
-
+session_start();
 
 require_once __DIR__ . '/../autoload.php';
 
-use Auth\BasicAuth;
 use Product\Product;
 
-header('Content-Type: application/json');
-
-BasicAuth::authenticate();
-
-//Read JSON body
-$data = json_decode(file_get_contents('php://input'), true);
-
-// Validate request
-if (
-    empty($data['sku']) ||
-    !isset($data['price']) ||
-    !isset($data['stock'])
-) {
-    throw new InvalidArgumentException('Invalid product data', 400);
+if (!isset($_SESSION['logged_in'])) {
+    header('Location: login.php');
+    exit;
 }
 
-//Product object
+//Validate input
+if (
+    empty($_POST['sku']) ||
+    empty($_POST['price']) ||
+    !isset($_POST['stock'])
+) {
+    die('Invalid product data');
+}
+
+//Create Product object
 $product = new Product(
-    $data['sku'],
-    (float) $data['price'],
-    (int) $data['stock']
+    $_POST['sku'],
+    (float) $_POST['price'],
+    (int) $_POST['stock']
 );
 
-//Return response
-echo json_encode($product->getDetails());
+//Store product
+$_SESSION['products'][] = $product->getDetails();
+
+//Redirect back to dashboard
+header('Location: /php/vendor-product-system/public/dashboard.php?product=added');
+exit;

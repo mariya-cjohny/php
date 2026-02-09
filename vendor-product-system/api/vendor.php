@@ -1,33 +1,30 @@
 <?php
-
+session_start();
 
 require_once __DIR__ . '/../autoload.php';
 
-use Auth\BasicAuth;
 use Vendor\Vendor;
 
-header('Content-Type: application/json');
-
-BasicAuth::authenticate();
-
-//Read JSON body
-$data = json_decode(file_get_contents('php://input'), true);
-
-//Validate request
+// Validate form data
 if (
-    empty($data['vendorId']) ||
-    empty($data['name']) ||
-    empty($data['contactEmail'])
+    empty($_POST['vendorId']) ||
+    empty($_POST['name']) ||
+    empty($_POST['contactEmail'])
 ) {
-    throw new InvalidArgumentException('Invalid vendor data', 400);
+    die('Invalid signup data');
 }
 
-//Vendor object
+//Create Vendor object
 $vendor = new Vendor(
-    $data['vendorId'],
-    $data['name'],
-    $data['contactEmail']
+    $_POST['vendorId'],
+    $_POST['name'],
+    $_POST['contactEmail']
 );
 
-//Return response
-echo json_encode($vendor->getDetails());
+// Mark user as logged in
+$_SESSION['logged_in'] = true;
+$_SESSION['vendor'] = $vendor->getDetails();
+
+// 4. Redirect to dashboard
+header('Location: /php/vendor-product-system/public/dashboard.php?signup=success');
+exit;
